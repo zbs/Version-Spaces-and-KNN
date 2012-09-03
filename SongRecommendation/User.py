@@ -11,7 +11,8 @@ class User():
             y[1] = int(y[1])
             return tuple(y)
         self.songs = dict(map(f, songs.split(' ')))
-
+        print self.songs
+        
     def get_cmp_funct(self, similarity_metric):
         def similarity_cmp(user1, user2):
             return similarity_metric(self.songs, user2.songs) - \
