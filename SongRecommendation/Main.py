@@ -2,6 +2,9 @@
 Created on Sep 3, 2012
 
 @author: zach
+
+Considerations:
+    - After original sorting by similarity, store the similarity per user for future use
 '''
 def run_knn(k, weighted, similarity_metric, user, artist=None):
     all_users = get_users()
