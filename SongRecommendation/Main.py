@@ -89,11 +89,14 @@ def get_liked_songs():
         return (user_id, set(song_string.split(' ')))
     # Format is x = dict, x[id] = set of song id strings
     return dict(map(parse_line, liked_string.split('\n')))
-
+#.573
 def get_artist_songs(artist):
     with open(MAPPING) as fp:
         mapping_pieces = fp.read().split('\n')
     return map(lambda x: x.split('\t')[0], filter(lambda x: x.find(artist) != -1, mapping_pieces))
+
+def get_relevant_songs(artist):
+    pass
 
 def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
     # Replace None with actual functions
@@ -108,6 +111,12 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
                                     all_users, liked_songs, True)
     elif artist != None:
         artist_songs = get_artist_songs(artist)
+        relevant_songs = get_relevant_songs(artist)
+        def f(x):
+            return (x,1)
+        generated_user = dict(map(f, artist_songs))
+        return run_knn_per_user(k, weighted, similarity_metric, generated_user, 
+                                    all_users, relevant_songs, True)
     else:
         def get_user_precision(user):
             return run_knn_per_user(k, weighted, similarity_metric, user, 
