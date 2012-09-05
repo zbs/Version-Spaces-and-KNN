@@ -1,6 +1,7 @@
 from User import User
 import heapq
 import sys
+import cProfile
 '''
 Created on Sep 3, 2012
 
@@ -18,6 +19,8 @@ REDUCED_TEST = '../reduced_data/user_test_reduced.txt'
 TRAIN = '../data/user_train.txt'
 TEST = '../data/user_test.txt'
 MAPPING = '../data/song_mapping.txt'
+
+similarity_cache = []
 
 def get_users():
     with open(TRAIN) as fp:
@@ -95,30 +98,8 @@ def get_artist_songs(artist):
         mapping_pieces = fp.read().split('\n')
     return map(lambda x: x.split('\t')[0], filter(lambda x: x.find(artist) != -1, mapping_pieces))
 
-def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
-    # Replace None with actual functions
-    similarity_metric = {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
-    
-    all_users = get_users()
-    liked_songs = get_liked_songs()
-    
-    if user_id != None:
-        user = filter(lambda x: x.id == user_id, all_users)[0]
-        return run_knn_per_user(k, weighted, similarity_metric, user, 
-                                    all_users, liked_songs, True)
-    elif artist != None:
-        artist_songs = get_artist_songs(artist)
-    else:
-        def get_user_precision(user):
-            return run_knn_per_user(k, weighted, similarity_metric, user, 
-                                    all_users, liked_songs, False)
-        # Average precision
-        return sum(map(get_user_precision, all_users))/float(len(all_users))
-
 def euclidean_distance(user1_songs, user2_songs):
-    
-    total = 0
-    user_dict = dict([])
+    user_dict = {}
     
     for song in user1_songs:
         user_dict[song] = user1_songs[song]
@@ -128,10 +109,8 @@ def euclidean_distance(user1_songs, user2_songs):
             user_dict[song] = user_dict[song] - user2_songs[song]
         else:
             user_dict[song] = user2_songs[song]
-            
-    for song in user_dict:
-        total += user_dict[song]**2
     
+    total = sum(map(lambda x: user_dict[x]**2, user_dict))
     if total == 0:
         return sys.maxint
     return 1. / total**(1./2.)
@@ -150,6 +129,28 @@ def cos_distance(user1_songs, user2_songs):
     
 def magnitude(vector):
     return sum(map(lambda x: x**2, vector.values())) ** (1./2.)
+
+def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
+    # Replace None with actual functions
+    similarity_metric = {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
+    
+    all_users = get_users()
+    liked_songs = get_liked_songs()
+    
+    if user_id != None:
+        user = filter(lambda x: x.id == user_id, all_users)[0]
+        return run_knn_per_user(k, weighted, similarity_metric, user, 
+                                    all_users, liked_songs, True)
+    elif artist != None:
+        artist_songs = get_artist_songs(artist)
+    else:
+        def get_user_precision(user):
+#            print user.id
+            return run_knn_per_user(k, weighted, similarity_metric, user, 
+                                    all_users, liked_songs, False)
+        # Average precision
+        return sum(map(get_user_precision, all_users))/float(len(all_users))
      
 if __name__ == '__main__':
-    print run_knn(250, False, 0, None, "Metallica")
+#    print run_knn(250, False, 0, None, None)
+    cProfile.run('run_knn(250, False, 0, 1, None)')
