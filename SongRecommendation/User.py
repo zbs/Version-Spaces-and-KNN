@@ -4,7 +4,7 @@ Created on Sep 3, 2012
 @author: zach
 '''
 class User():
-    def __init__(self, user_line, user_id=None, user_songs=None):
+    def __init__(self, user_line=None, user_id=None, user_songs=None):
         if user_id and user_songs:
             self.id, self.songs = user_id, user_songs
         else:    
