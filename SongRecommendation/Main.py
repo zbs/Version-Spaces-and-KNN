@@ -17,8 +17,8 @@ Considerations:
 REDUCED_TRAIN = '../reduced_data/user_train_reduced.txt'
 REDUCED_TEST = '../reduced_data/user_test_reduced.txt'
 
-TRAIN = '../data/user_train.txt'
-TEST = '../data/user_test.txt'
+TRAIN = REDUCED_TRAIN#'../data/user_train.txt'
+TEST = REDUCED_TEST #'../data/user_test.txt'
 MAPPING = '../data/song_mapping.txt'
 
 CACHES = {0:'EUCLIDEAN_CACHE', 1:'DOT_CACHE', 2:'COSINE_CACHE'}
@@ -101,10 +101,16 @@ def get_artist_songs(artist):
 def get_relevant_songs(artist):
     pass
 
+def get_song_mappings():
+    with open(MAPPING) as fp:
+        text = fp.read()
+    mapping_lines = map(lambda x: x.split('\t'), text.split('\n'))
+    return dict(map(lambda x: (x[0], x[1:]), mapping_lines))
+
 def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
     # Replace None with actual functions
-    similarity_metric = cached_similarity(similarity_metric_index)
-    
+    similarity_metric = cached_similarity(similarity_metric_index, False)
+    mappings = get_song_mappings()
     all_users = get_users()
     liked_songs = get_liked_songs()
     
@@ -116,11 +122,11 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
         artist_songs = get_artist_songs(artist)
         def f(x):
             return (x,1)
-        generated_user = User(-1, dict(map(f, artist_songs)))
+        generated_user = User(user_id=-1, user_songs=dict(map(f, artist_songs)))
         top_k_users = get_top_k_users(generated_user, all_users, k, similarity_metric, is_user_generated=True)
         ranking_vector = calculate_ranking_vector(generated_user, top_k_users, k, similarity_metric, weighted)
         top_ten_songs = get_top_ten_songs(ranking_vector)
-        print top_ten_songs
+        print map(lambda x: mappings[x], top_ten_songs)
     else:
         def get_user_precision(user):
 #            print user.id
@@ -159,12 +165,13 @@ def dot_product(user1_songs, user2_songs):
         
     return product
 
-def cached_similarity(similarity_metric_index):
+def cached_similarity(similarity_metric_index, external_cache=False):
 #    {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
-        global similarity_cache
-        pickled_file = CACHES[similarity_metric_index]
-        if does_file_exist(pickled_file):
-            similarity_cache = pickle.load(open(pickled_file))
+        if external_cache:
+            global similarity_cache
+            pickled_file = CACHES[similarity_metric_index]
+            if does_file_exist(pickled_file):
+                similarity_cache = pickle.load(open(pickled_file))
         
         similarity_metric = {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
         def helper(user1, user2):
@@ -194,6 +201,6 @@ def magnitude(vector):
     return sum(map(lambda x: x**2, vector.values())) ** (1./2.)
      
 if __name__ == '__main__':
-    run_knn(250, False, 0, None, None)
+#    run_knn(250, False, 0, None, None)
+    run_knn(100, False, 0, None, "Metallica")
 #    cProfile.run('run_knn(250, False, 0, None, None)')
-
