@@ -17,8 +17,8 @@ Considerations:
 REDUCED_TRAIN = '../reduced_data/user_train_reduced.txt'
 REDUCED_TEST = '../reduced_data/user_test_reduced.txt'
 
-TRAIN = REDUCED_TRAIN #'../data/user_train.txt'
-TEST = REDUCED_TEST #'../data/user_test.txt'
+TRAIN = '../data/user_train.txt'
+TEST = '../data/user_test.txt'
 MAPPING = '../data/song_mapping.txt'
 
 CACHES = {0:'EUCLIDEAN_CACHE', 1:'DOT_CACHE', 2:'COSINE_CACHE'}
@@ -123,7 +123,7 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
         print top_ten_songs
     else:
         def get_user_precision(user):
-            print user.id
+#            print user.id
             return run_knn_per_user(k, weighted, similarity_metric, user, 
                                     all_users, liked_songs, False)
         # Average precision
@@ -161,6 +161,7 @@ def dot_product(user1_songs, user2_songs):
 
 def cached_similarity(similarity_metric_index):
 #    {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
+        global similarity_cache
         pickled_file = CACHES[similarity_metric_index]
         if does_file_exist(pickled_file):
             similarity_cache = pickle.load(open(pickled_file))
@@ -168,13 +169,13 @@ def cached_similarity(similarity_metric_index):
         similarity_metric = {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
         def helper(user1, user2):
             global similarity_cache
-            if (user1, user2) in similarity_cache:
-                return similarity_cache[(user1, user2)]
-            elif (user2, user1) in similarity_cache:
-                return similarity_cache[(user2, user1)]
+            if (user1.id, user2.id) in similarity_cache:
+                return similarity_cache[(user1.id, user2.id)]
+            elif (user2.id, user1.id) in similarity_cache:
+                return similarity_cache[(user2.id, user1.id)]
             else:
                 similarity = similarity_metric(user1.songs, user2.songs)
-                similarity_cache[(user1, user2)] = similarity
+                similarity_cache[(user1.id, user2.id)] = similarity
                 return similarity
         return helper
 
@@ -194,5 +195,5 @@ def magnitude(vector):
      
 if __name__ == '__main__':
     run_knn(250, False, 0, None, None)
-#    cProfile.run('run_knn(250, False, 0, 1, None)')
+#    cProfile.run('run_knn(250, False, 0, None, None)')
 
