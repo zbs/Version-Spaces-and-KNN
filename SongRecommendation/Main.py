@@ -90,8 +90,10 @@ def get_liked_songs():
     # Format is x = dict, x[id] = set of song id strings
     return dict(map(parse_line, liked_string.split('\n')))
 
-def get_song_mappings():
-    pass
+def get_artist_songs(artist):
+    with open(MAPPING) as fp:
+        mapping_pieces = fp.read().split('\n')
+    return map(lambda x: x.split('\t')[0], filter(lambda x: x.find(artist) != -1, mapping_pieces))
 
 def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
     # Replace None with actual functions
@@ -99,14 +101,13 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
     
     all_users = get_users()
     liked_songs = get_liked_songs()
-    song_mappings = get_song_mappings()
     
     if user_id != None:
         user = filter(lambda x: x.id == user_id, all_users)[0]
         return run_knn_per_user(k, weighted, similarity_metric, user, 
-                                    all_users, liked_songs, False)
+                                    all_users, liked_songs, True)
     elif artist != None:
-        pass
+        artist_songs = get_artist_songs(artist)
     else:
         def get_user_precision(user):
             return run_knn_per_user(k, weighted, similarity_metric, user, 
@@ -151,4 +152,4 @@ def magnitude(vector):
     return sum(map(lambda x: x**2, vector.values())) ** (1./2.)
      
 if __name__ == '__main__':
-    print run_knn(3, False, 0, 1, None)
+    print run_knn(250, False, 0, None, "Metallica")
