@@ -20,17 +20,12 @@ TRAIN = '../data/user_train.txt'
 TEST = '../data/user_test.txt'
 MAPPING = '../data/song_mapping.txt'
 
-similarity_cache = []
+similarity_cache = {}
 
 def get_users():
     with open(TRAIN) as fp:
         train_text = fp.read().strip()
     return map(lambda x: User(x), train_text.split('\n'))
-
-def sort_users_by_similarity(user, all_users, similarity_metric):
-    cmp_funct = user.get_cmp_funct(similarity_metric)
-    # Exclude first since it will always be the original user
-    return sorted(all_users, cmp=cmp_funct)[1:]
 
 def get_top_k_users(user, all_users, k, similarity_metric, is_user_generated=False):
     similarity_funct = user.get_similarity_funct(similarity_metric)
@@ -54,7 +49,7 @@ def calculate_ranking_vector(user, top_k_users, k, similarity_metric, weighted):
             modified_song_count = top_user.songs[song_id]
             
             if weighted:
-                similarity = similarity_metric(user.songs, top_user.songs)
+                similarity = similarity_metric(user, top_user)
                 modified_song_count *= similarity
                 similarity_total += similarity
                 
@@ -106,7 +101,7 @@ def get_relevant_songs(artist):
 
 def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
     # Replace None with actual functions
-    similarity_metric = {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
+    similarity_metric = cached_similarity({0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index])
     
     all_users = get_users()
     liked_songs = get_liked_songs()
@@ -126,6 +121,7 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
         print top_ten_songs
     else:
         def get_user_precision(user):
+            print user.id
             return run_knn_per_user(k, weighted, similarity_metric, user, 
                                     all_users, liked_songs, False)
         # Average precision
@@ -159,11 +155,14 @@ def dot_product(user1_songs, user2_songs):
 def cached_similarity(similarity_metric):
         def helper(user1, user2):
             if (user1, user2) in similarity_cache:
-                pass
+                return similarity_cache[(user1, user2)]
             elif (user2, user1) in similarity_cache:
-                pass
+                return similarity_cache[(user2, user1)]
             else:
-                pass
+                similarity = similarity_metric(user1.songs, user2.songs)
+                similarity_cache[(user1, user2)] = similarity
+                return similarity
+        return helper
 
 def cos_distance(user1_songs, user2_songs):
     return dot_product(user1_songs, user2_songs) / (magnitude(user1_songs) * magnitude(user2_songs))
@@ -173,6 +172,6 @@ def magnitude(vector):
     return sum(map(lambda x: x**2, vector.values())) ** (1./2.)
      
 if __name__ == '__main__':
-#    print run_knn(250, False, 0, None, None)
-    cProfile.run('run_knn(250, False, 0, 1, None)')
+    print run_knn(250, False, 0, None, None)
+#    cProfile.run('run_knn(250, False, 0, 1, None)')
 

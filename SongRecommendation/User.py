@@ -17,13 +17,7 @@ class User():
             self.songs = dict(map(f, songs.split(' ')))
     
     def get_similarity_funct(self, similarity_metric):
-        return lambda other_user: similarity_metric(self.songs, other_user.songs)
-    
-    def get_cmp_funct(self, similarity_metric):
-        def similarity_cmp(user1, user2):
-            return similarity_metric(self.songs, user2.songs) - \
-                    similarity_metric(self.songs, user1.songs)
-        return similarity_cmp
+        return lambda other_user: similarity_metric(self, other_user)
     
     def __str__(self):
         return 'User ID = %s; Songs = %s'%(self.id, str(self.songs))
