@@ -31,7 +31,9 @@ def sort_users_by_similarity(user, all_users, similarity_metric):
 
 def get_top_k_users(user, all_users, k, similarity_metric):
     similarity_funct = user.get_similarity_funct(similarity_metric)
-    return heapq.nlargest(k, all_users, similarity_funct)
+    # Discount the first user since it is the same as the one being
+    # compared against
+    return heapq.nlargest(k+1, all_users, similarity_funct)[1:]
     
 def calculate_ranking_vector(user, top_k_users, k, similarity_metric, weighted):
     similarity_total = 0
@@ -72,11 +74,12 @@ def run_knn_per_user(k, weighted, similarity_metric, user, users, liked_songs, g
     top_k_users = get_top_k_users(user, all_users, k, similarity_metric)
     ranking_vector = calculate_ranking_vector(user, top_k_users, k, similarity_metric, weighted)
     top_ten_songs = get_top_ten_songs(ranking_vector)
+    precision = get_precision_at_ten(top_ten_songs, liked_songs)
     if not get_top_songs:
-        return get_precision_at_ten(top_ten_songs, liked_songs)
+        return precision
     else:
-        # Send back top ten songs from collection and from ranked vector
-        pass
+        top_ten_collection_songs = heapq.nlargest(10, user.songs, lambda x: user.songs[x])
+        return (precision, top_ten_songs, top_ten_collection_songs)
 
 def get_liked_songs():
     with open(TEST) as fp:
@@ -84,6 +87,7 @@ def get_liked_songs():
     def parse_line(liked_line):
         user_id, song_string = liked_line.split(' - ')
         return (user_id, set(song_string.split(' ')))
+    # Format is x = dict, x[id] = set of song id strings
     return dict(map(parse_line, liked_string.split('\n')))
 
 def get_song_mappings():
