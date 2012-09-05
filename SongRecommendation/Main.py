@@ -32,11 +32,14 @@ def sort_users_by_similarity(user, all_users, similarity_metric):
     # Exclude first since it will always be the original user
     return sorted(all_users, cmp=cmp_funct)[1:]
 
-def get_top_k_users(user, all_users, k, similarity_metric):
+def get_top_k_users(user, all_users, k, similarity_metric, is_user_generated=False):
     similarity_funct = user.get_similarity_funct(similarity_metric)
     # Discount the first user since it is the same as the one being
     # compared against
-    return heapq.nlargest(k+1, all_users, similarity_funct)[1:]
+    if not is_user_generated:
+        return heapq.nlargest(k+1, all_users, similarity_funct)[1:]
+    else:
+        return heapq.nlargest(k+1, all_users, similarity_funct)
     
 def calculate_ranking_vector(user, top_k_users, k, similarity_metric, weighted):
     similarity_total = 0
@@ -117,7 +120,7 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
         def f(x):
             return (x,1)
         generated_user = User(-1, dict(map(f, artist_songs)))
-        top_k_users = get_top_k_users(generated_user, all_users, k, similarity_metric)
+        top_k_users = get_top_k_users(generated_user, all_users, k, similarity_metric, is_user_generated=True)
         ranking_vector = calculate_ranking_vector(generated_user, top_k_users, k, similarity_metric, weighted)
         top_ten_songs = get_top_ten_songs(ranking_vector)
         print top_ten_songs
@@ -153,33 +156,21 @@ def dot_product(user1_songs, user2_songs):
         
     return product
 
+def cached_similarity(similarity_metric):
+        def helper(user1, user2):
+            if (user1, user2) in similarity_cache:
+                pass
+            elif (user2, user1) in similarity_cache:
+                pass
+            else:
+                pass
+
 def cos_distance(user1_songs, user2_songs):
     return dot_product(user1_songs, user2_songs) / (magnitude(user1_songs) * magnitude(user2_songs))
     #return (magnitude(user1_songs) * magnitude(user2_songs))
     
 def magnitude(vector):
     return sum(map(lambda x: x**2, vector.values())) ** (1./2.)
-
-def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
-    # Replace None with actual functions
-    similarity_metric = {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
-    
-    all_users = get_users()
-    liked_songs = get_liked_songs()
-    
-    if user_id != None:
-        user = filter(lambda x: x.id == user_id, all_users)[0]
-        return run_knn_per_user(k, weighted, similarity_metric, user, 
-                                    all_users, liked_songs, True)
-    elif artist != None:
-        artist_songs = get_artist_songs(artist)
-    else:
-        def get_user_precision(user):
-#            print user.id
-            return run_knn_per_user(k, weighted, similarity_metric, user, 
-                                    all_users, liked_songs, False)
-        # Average precision
-        return sum(map(get_user_precision, all_users))/float(len(all_users))
      
 if __name__ == '__main__':
 #    print run_knn(250, False, 0, None, None)
