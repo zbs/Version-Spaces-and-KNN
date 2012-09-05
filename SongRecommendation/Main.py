@@ -111,12 +111,13 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
                                     all_users, liked_songs, True)
     elif artist != None:
         artist_songs = get_artist_songs(artist)
-        relevant_songs = get_relevant_songs(artist)
         def f(x):
             return (x,1)
-        generated_user = dict(map(f, artist_songs))
-        return run_knn_per_user(k, weighted, similarity_metric, generated_user, 
-                                    all_users, relevant_songs, True)
+        generated_user = User(-1, dict(map(f, artist_songs)))
+        top_k_users = get_top_k_users(generated_user, all_users, k, similarity_metric)
+        ranking_vector = calculate_ranking_vector(generated_user, top_k_users, k, similarity_metric, weighted)
+        top_ten_songs = get_top_ten_songs(ranking_vector)
+        print top_ten_songs
     else:
         def get_user_precision(user):
             return run_knn_per_user(k, weighted, similarity_metric, user, 
@@ -161,4 +162,4 @@ def magnitude(vector):
     return sum(map(lambda x: x**2, vector.values())) ** (1./2.)
      
 if __name__ == '__main__':
-    print run_knn(250, False, 0, None, "Metallica")
+    print run_knn(250, False, 0, None, 'Metallica')
