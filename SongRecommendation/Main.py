@@ -116,7 +116,7 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
         artist_songs = get_artist_songs(artist)
         def f(x):
             return (x,1)
-        generated_user = User(-1, dict(map(f, artist_songs)))
+        generated_user = User(user_id = -1, user_songs = dict(map(f, artist_songs)))
         top_k_users = get_top_k_users(generated_user, all_users, k, similarity_metric, is_user_generated=True)
         ranking_vector = calculate_ranking_vector(generated_user, top_k_users, k, similarity_metric, weighted)
         top_ten_songs = get_top_ten_songs(ranking_vector)
@@ -132,7 +132,10 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
         cache_name = CACHES[similarity_metric_index]
         if not does_file_exist(cache_name):
             pickle.dump(similarity_cache, open(cache_name, 'w'))
+        print avg_precision
         return avg_precision
+    
+        
 
 def euclidean_distance(user1_songs, user2_songs):
     user_dict = {}
@@ -161,9 +164,9 @@ def dot_product(user1_songs, user2_songs):
 
 def cached_similarity(similarity_metric_index):
 #    {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
-        pickled_file = CACHES[similarity_metric_index]
-        if does_file_exist(pickled_file):
-            similarity_cache = pickle.load(open(pickled_file))
+#        pickled_file = CACHES[similarity_metric_index]
+#        if does_file_exist(pickled_file):
+#            similarity_cache = pickle.load(open(pickled_file))
         
         similarity_metric = {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
         def helper(user1, user2):
@@ -193,6 +196,6 @@ def magnitude(vector):
     return sum(map(lambda x: x**2, vector.values())) ** (1./2.)
      
 if __name__ == '__main__':
-    run_knn(250, False, 0, None, None)
+    run_knn(100, False, 0, None, 'Metallica')
 #    cProfile.run('run_knn(250, False, 0, 1, None)')
 
