@@ -2,6 +2,7 @@ from User import User
 import heapq
 import sys
 import cProfile
+import pickle
 '''
 Created on Sep 3, 2012
 
@@ -16,10 +17,11 @@ Considerations:
 REDUCED_TRAIN = '../reduced_data/user_train_reduced.txt'
 REDUCED_TEST = '../reduced_data/user_test_reduced.txt'
 
-TRAIN = '../data/user_train.txt'
-TEST = '../data/user_test.txt'
+TRAIN = REDUCED_TRAIN #'../data/user_train.txt'
+TEST = REDUCED_TEST #'../data/user_test.txt'
 MAPPING = '../data/song_mapping.txt'
 
+CACHES = {0:'EUCLIDEAN_CACHE', 1:'DOT_CACHE', 2:'COSINE_CACHE'}
 similarity_cache = {}
 
 def get_users():
@@ -101,7 +103,7 @@ def get_relevant_songs(artist):
 
 def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
     # Replace None with actual functions
-    similarity_metric = cached_similarity({0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index])
+    similarity_metric = cached_similarity(similarity_metric_index)
     
     all_users = get_users()
     liked_songs = get_liked_songs()
@@ -125,7 +127,12 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
             return run_knn_per_user(k, weighted, similarity_metric, user, 
                                     all_users, liked_songs, False)
         # Average precision
-        return sum(map(get_user_precision, all_users))/float(len(all_users))
+        avg_precision = sum(map(get_user_precision, all_users))/float(len(all_users))
+        
+        cache_name = CACHES[similarity_metric_index]
+        if not does_file_exist(cache_name):
+            pickle.dump(similarity_cache, open(cache_name, 'w'))
+        return avg_precision
 
 def euclidean_distance(user1_songs, user2_songs):
     user_dict = {}
@@ -152,8 +159,15 @@ def dot_product(user1_songs, user2_songs):
         
     return product
 
-def cached_similarity(similarity_metric):
+def cached_similarity(similarity_metric_index):
+#    {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
+        pickled_file = CACHES[similarity_metric_index]
+        if does_file_exist(pickled_file):
+            similarity_cache = pickle.load(open(pickled_file))
+        
+        similarity_metric = {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
         def helper(user1, user2):
+            global similarity_cache
             if (user1, user2) in similarity_cache:
                 return similarity_cache[(user1, user2)]
             elif (user2, user1) in similarity_cache:
@@ -168,10 +182,17 @@ def cos_distance(user1_songs, user2_songs):
     return dot_product(user1_songs, user2_songs) / (magnitude(user1_songs) * magnitude(user2_songs))
     #return (magnitude(user1_songs) * magnitude(user2_songs))
     
+def does_file_exist(filename):
+    try:
+        with open(filename) as f: pass
+    except IOError:
+        return False
+    return True
+
 def magnitude(vector):
     return sum(map(lambda x: x**2, vector.values())) ** (1./2.)
      
 if __name__ == '__main__':
-    print run_knn(250, False, 0, None, None)
+    run_knn(250, False, 0, None, None)
 #    cProfile.run('run_knn(250, False, 0, 1, None)')
 
