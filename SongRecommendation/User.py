@@ -5,9 +5,8 @@ Created on Sep 3, 2012
 '''
 class User():
     def __init__(self, user_line):
-        if len(user_line.split(' - ')) != 2:
-            print user_line
-        self.user, songs = user_line.split(' - ') 
+        self.id, songs = user_line.split(' - ') 
+        self.id = int(self.id)
         def f(x):
             y = x.split(':')
             y[1] = int(y[1])
@@ -22,3 +21,9 @@ class User():
             return similarity_metric(self.songs, user2.songs) - \
                     similarity_metric(self.songs, user1.songs)
         return similarity_cmp
+    
+    def __str__(self):
+        return 'User ID = %s; Songs = %s'%(self.id, str(self.songs))
+    
+    def __repr__(self):
+        return 'User ID = %s; Songs = %s'%(self.id, str(self.songs))
