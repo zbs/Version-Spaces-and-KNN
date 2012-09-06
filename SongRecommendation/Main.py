@@ -21,7 +21,6 @@ REDUCED_TEST = '../reduced_data/user_test_reduced.txt'
 
 TRAIN = REDUCED_TRAIN if REDUCED else '../data/user_train.txt'
 TEST = REDUCED_TEST if REDUCED else '../data/user_test.txt'
-
 MAPPING = '../data/song_mapping.txt'
 
 CACHES = {0:'EUCLIDEAN_CACHE', 1:'DOT_CACHE', 2:'COSINE_CACHE'}
@@ -127,9 +126,12 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
 
         def f(x):
             return (x,1)
-        generated_user = User(user_id=-1, user_songs=dict(map(f, artist_songs)))
 
+        generated_user = User(user_id = -1, user_songs = dict(map(f, artist_songs)))
         top_k_users = get_top_k_users(generated_user, all_users, k, similarity_metric, is_user_generated=True)
+        #for one_user in top_k_users:
+            #print one_user.songs
+            #print dot_product(one_user.songs, dict(map(f, artist_songs)))
         ranking_vector = calculate_ranking_vector(generated_user, top_k_users, k, similarity_metric, weighted)
         top_ten_songs = get_top_ten_songs(ranking_vector)
         return top_ten_songs
@@ -137,7 +139,6 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
         def get_user_precision(user):
             if user.id % 100 == 0:
                 print user.id
-                
             return run_knn_per_user(k, weighted, similarity_metric, user, 
                                     all_users, liked_songs, False)
         # Average precision
@@ -146,7 +147,10 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
         cache_name = CACHES[similarity_metric_index]
         if not does_file_exist(cache_name):
             pickle.dump(similarity_cache, open(cache_name, 'w'))
+        print avg_precision
         return avg_precision
+    
+        
 
 def euclidean_distance(user1_songs, user2_songs):
     user_dict = {}
@@ -170,16 +174,17 @@ def dot_product(user1_songs, user2_songs):
     product = 0
     for song in song_intersection:
         product += user1_songs[song] * user2_songs[song]
-        
     return product
 
 def cached_similarity(similarity_metric_index, external_cache=False):
 #    {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
+
         if external_cache:
             global similarity_cache
             pickled_file = CACHES[similarity_metric_index]
             if does_file_exist(pickled_file):
                 similarity_cache = pickle.load(open(pickled_file))
+
         
         similarity_metric = {0: euclidean_distance, 1:dot_product, 2:cos_distance}[similarity_metric_index]
         def helper(user1, user2):
