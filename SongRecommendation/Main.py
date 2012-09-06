@@ -17,8 +17,8 @@ Considerations:
 REDUCED_TRAIN = '../reduced_data/user_train_reduced.txt'
 REDUCED_TEST = '../reduced_data/user_test_reduced.txt'
 
-TRAIN = REDUCED_TRAIN#'../data/user_train.txt'
-TEST = REDUCED_TEST #'../data/user_test.txt'
+TRAIN = '../data/user_train.txt'
+TEST = '../data/user_test.txt'
 MAPPING = '../data/song_mapping.txt'
 
 CACHES = {0:'EUCLIDEAN_CACHE', 1:'DOT_CACHE', 2:'COSINE_CACHE'}
@@ -124,14 +124,16 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
             return (x,1)
 
         generated_user = User(user_id = -1, user_songs = dict(map(f, artist_songs)))
-
         top_k_users = get_top_k_users(generated_user, all_users, k, similarity_metric, is_user_generated=True)
+        #for one_user in top_k_users:
+            #print one_user.songs
+            #print dot_product(one_user.songs, dict(map(f, artist_songs)))
         ranking_vector = calculate_ranking_vector(generated_user, top_k_users, k, similarity_metric, weighted)
         top_ten_songs = get_top_ten_songs(ranking_vector)
         print map(lambda x: mappings[x], top_ten_songs)
     else:
         def get_user_precision(user):
-#            print user.id
+            print user.id
             return run_knn_per_user(k, weighted, similarity_metric, user, 
                                     all_users, liked_songs, False)
         # Average precision
@@ -167,7 +169,6 @@ def dot_product(user1_songs, user2_songs):
     product = 0
     for song in song_intersection:
         product += user1_songs[song] * user2_songs[song]
-        
     return product
 
 def cached_similarity(similarity_metric_index, external_cache=False):
@@ -210,5 +211,5 @@ def magnitude(vector):
 if __name__ == '__main__':
 
 #    run_knn(250, False, 0, None, None)
-    run_knn(100, False, 0, None, "Metallica")
-#    cProfile.run('run_knn(250, False, 0, None, None)')
+    run_knn(20, False, 2, None, 'Usher')
+
