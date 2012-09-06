@@ -14,11 +14,13 @@ Considerations:
     - 2) Feel free to use a "k-largest numbers in list" routine to increase the efficiency of finding the k-nearest neighbors. Calculate the similarities to all other users for a given user and then process the unsorted list with such a function instead of just sorting the whole list and taking the first k entries. Python has heapq.nlargest() for this, for example. This can get you the k-nearest neighbors in something like O(nlogk) time instead of O(nlogn), which is a savings of roughly half the run-time when k = 3 or of about 15% when k = 1000.
     
 '''
+REDUCED = False
+
 REDUCED_TRAIN = '../reduced_data/user_train_reduced.txt'
 REDUCED_TEST = '../reduced_data/user_test_reduced.txt'
 
-TRAIN = '../data/user_train.txt'
-TEST = '../data/user_test.txt'
+TRAIN = REDUCED_TRAIN if REDUCED else '../data/user_train.txt'
+TEST = REDUCED_TEST if REDUCED else '../data/user_test.txt'
 MAPPING = '../data/song_mapping.txt'
 
 CACHES = {0:'EUCLIDEAN_CACHE', 1:'DOT_CACHE', 2:'COSINE_CACHE'}
@@ -36,7 +38,7 @@ def get_top_k_users(user, all_users, k, similarity_metric, is_user_generated=Fal
     if not is_user_generated:
         return heapq.nlargest(k+1, all_users, similarity_funct)[1:]
     else:
-        return heapq.nlargest(k+1, all_users, similarity_funct)
+        return heapq.nlargest(k, all_users, similarity_funct)
     
 def calculate_ranking_vector(user, top_k_users, k, similarity_metric, weighted):
     similarity_total = 0
@@ -109,7 +111,8 @@ def get_song_mappings():
 
 def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
     # Replace None with actual functions
-    similarity_metric = cached_similarity(similarity_metric_index, False)
+    similarity_metric = cached_similarity(similarity_metric_index, True)
+    
     mappings = get_song_mappings()
     all_users = get_users()
     liked_songs = get_liked_songs()
@@ -120,6 +123,7 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
                                     all_users, liked_songs, True)
     elif artist != None:
         artist_songs = get_artist_songs(artist)
+
         def f(x):
             return (x,1)
 
@@ -130,10 +134,11 @@ def run_knn(k, weighted, similarity_metric_index, user_id=None, artist=None):
             #print dot_product(one_user.songs, dict(map(f, artist_songs)))
         ranking_vector = calculate_ranking_vector(generated_user, top_k_users, k, similarity_metric, weighted)
         top_ten_songs = get_top_ten_songs(ranking_vector)
-        print map(lambda x: mappings[x], top_ten_songs)
+        return top_ten_songs
     else:
         def get_user_precision(user):
-            print user.id
+            if user.id % 100 == 0:
+                print user.id
             return run_knn_per_user(k, weighted, similarity_metric, user, 
                                     all_users, liked_songs, False)
         # Average precision
@@ -162,7 +167,7 @@ def euclidean_distance(user1_songs, user2_songs):
     total = sum(map(lambda x: user_dict[x]**2, user_dict))
     if total == 0:
         return sys.maxint
-    return 1. / total**(1./2.)
+    return 1. / total
 
 def dot_product(user1_songs, user2_songs):
     song_intersection = set.intersection(set(user1_songs.keys()), set(user2_songs.keys()))
@@ -210,6 +215,8 @@ def magnitude(vector):
      
 if __name__ == '__main__':
 
+
 #    run_knn(250, False, 0, None, None)
     run_knn(10, False, 2, None, None)
+
 
