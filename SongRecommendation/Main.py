@@ -211,5 +211,5 @@ def magnitude(vector):
 if __name__ == '__main__':
 
 #    run_knn(250, False, 0, None, None)
-    run_knn(20, False, 2, None, 'Usher')
+    run_knn(10, False, 2, None, None)
 
